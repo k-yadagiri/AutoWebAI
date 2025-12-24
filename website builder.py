@@ -80,7 +80,7 @@ Output MUST be EXACTLY in this format and nothing else:
 
     # ✅ Stable, widely available model
     model = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash-latest",
+        model="gemini-pro",
         temperature=0.6,
         max_output_tokens=4096
     )
@@ -163,4 +163,5 @@ Original output:
         )
 
     st.success("Website generated successfully")
+
 
