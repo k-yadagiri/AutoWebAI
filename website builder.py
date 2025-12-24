@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 
 # --------------------------------------------------
 # ENV SETUP
@@ -28,7 +28,7 @@ st.title("AI Website Builder")
 
 prompt = st.text_area(
     "Describe your website",
-    placeholder="Example: A modern portfolio website for a data scientist with hero section, projects, and contact form"
+    placeholder="Example: A modern portfolio website with hero section, projects, and contact form"
 )
 
 # --------------------------------------------------
@@ -40,9 +40,6 @@ if st.button("Generate Website", type="primary"):
         st.warning("Please describe your website.")
         st.stop()
 
-    # --------------------------------------------------
-    # CORRECT LANGCHAIN MESSAGE FORMAT
-    # --------------------------------------------------
     messages = [
         SystemMessage(content="""
 You are a senior frontend engineer.
@@ -56,10 +53,11 @@ Rules (MUST FOLLOW STRICTLY):
 - No frameworks or libraries
 - Modern UI (gradients, cards, shadows)
 - Fully responsive
-- Do NOT include explanations or markdown
+- Do NOT include explanations
+- Do NOT include markdown
 - Do NOT include backticks
 
-OUTPUT FORMAT (EXACT, NO EXTRA TEXT):
+OUTPUT FORMAT (EXACT):
 
 ---html---
 [html code]
@@ -76,9 +74,6 @@ OUTPUT FORMAT (EXACT, NO EXTRA TEXT):
         HumanMessage(content=prompt)
     ]
 
-    # --------------------------------------------------
-    # MODEL INIT
-    # --------------------------------------------------
     model = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         temperature=0.6,
@@ -90,20 +85,14 @@ OUTPUT FORMAT (EXACT, NO EXTRA TEXT):
 
     content = response.content
 
-    # --------------------------------------------------
-    # SAFE PARSING
-    # --------------------------------------------------
     try:
         html = content.split("---html---")[1].split("---html---")[0].strip()
         css  = content.split("---css---")[1].split("---css---")[0].strip()
         js   = content.split("---js---")[1].split("---js---")[0].strip()
     except Exception:
-        st.error("Model response format was invalid. Please click Generate again.")
+        st.error("Model response format invalid. Click Generate again.")
         st.stop()
 
-    # --------------------------------------------------
-    # FILE WRITING
-    # --------------------------------------------------
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -113,20 +102,14 @@ OUTPUT FORMAT (EXACT, NO EXTRA TEXT):
     with open("script.js", "w", encoding="utf-8") as f:
         f.write(js)
 
-    # --------------------------------------------------
-    # ZIP CREATION
-    # --------------------------------------------------
     with zipfile.ZipFile("website.zip", "w", zipfile.ZIP_DEFLATED) as zipf:
         zipf.write("index.html")
         zipf.write("style.css")
         zipf.write("script.js")
 
-    # --------------------------------------------------
-    # DOWNLOAD
-    # --------------------------------------------------
     with open("website.zip", "rb") as f:
         st.download_button(
-            label="Download Website ZIP",
+            "Download Website ZIP",
             data=f,
             file_name="website.zip",
             mime="application/zip"
