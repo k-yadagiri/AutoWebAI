@@ -41,7 +41,7 @@ Output MUST be EXACTLY in this format and nothing else:
     
     message.append(("user", prompt))
 
-    model=ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
+    model=ChatGoogleGenerativeAI(model="gemini-2.5-flash")
     response = model.invoke(message)
 
     content = response.content
@@ -74,5 +74,6 @@ Output MUST be EXACTLY in this format and nothing else:
     st.download_button("click to download",
                        data=open("website.zip","rb"),
                        file_name="website.zip")
+
 
     st.write("success")
