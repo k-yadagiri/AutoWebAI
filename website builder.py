@@ -4,6 +4,28 @@ import zipfile
 from dotenv import load_dotenv
 
 
+import re
+
+def extract_sections(content):
+    def block(name):
+        match = re.search(
+            rf"---{name}---(.*?)---{name}---",
+            content,
+            re.DOTALL | re.IGNORECASE
+        )
+        return match.group(1).strip() if match else None
+
+    html = block("html")
+    css  = block("css")
+    js   = block("js")
+
+    if html and css and js:
+        return html, css, js
+
+    raise ValueError("Invalid format")
+
+
+
 load_dotenv()
 
 st.set_page_config(page_title="Free AI website builder",page_icon="🤖")
@@ -47,12 +69,42 @@ Output MUST be EXACTLY in this format and nothing else:
     content = response.content
 
     try:
-        html = content.split("---html---")[1].split("---html---")[0].strip()
-        css  = content.split("---css---")[1].split("---css---")[0].strip()
-        js   = content.split("---js---")[1].split("---js---")[0].strip()
-    except IndexError:
-        st.error("Model output format is invalid. Please try again.")
+    html, css, js = extract_sections(content)
+except ValueError:
+    st.warning("Fixing model output format automatically...")
+
+    repair_prompt = f"""
+Rewrite the following output EXACTLY in this format and NOTHING else:
+
+---html---
+(valid HTML only)
+---html---
+
+---css---
+(valid CSS only)
+---css---
+
+---js---
+(valid JavaScript only)
+---js---
+
+Original output:
+{content}
+"""
+
+    repair_messages = [
+        SystemMessage(content="Fix formatting only. Do not change content."),
+        HumanMessage(content=repair_prompt)
+    ]
+
+    repaired = model.invoke(repair_messages).content
+
+    try:
+        html, css, js = extract_sections(repaired)
+    except ValueError:
+        st.error("Model failed to fix output. Please click Generate again.")
         st.stop()
+
 
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
@@ -76,3 +128,4 @@ Output MUST be EXACTLY in this format and nothing else:
                        file_name="website.zip")
 
     st.write("success")
+
