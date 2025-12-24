@@ -75,7 +75,7 @@ OUTPUT FORMAT (EXACT):
     ]
 
     model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash-lite",
         temperature=0.6,
         max_output_tokens=8192
     )
@@ -116,3 +116,4 @@ OUTPUT FORMAT (EXACT):
         )
 
     st.success("Website generated successfully!")
+
