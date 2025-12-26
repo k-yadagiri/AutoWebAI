@@ -1,57 +1,19 @@
 import streamlit as st
+from langchain_google_genai import ChatGoogleGenerativeAI
 import zipfile
-import re
 from dotenv import load_dotenv
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage, HumanMessage
 
-# --------------------------------------------------
-# Load environment variables
-# --------------------------------------------------
 load_dotenv()
 
-# --------------------------------------------------
-# Streamlit UI
-# --------------------------------------------------
-st.set_page_config(page_title="Free AI website builder", page_icon="🤖")
+st.set_page_config(page_title="Free AI website builder",page_icon="🤖")
+
 st.title("AI website builder")
 
-prompt = st.text_area("Write here about your website")
+prompt=st.text_area("write here about your website")
 
-# --------------------------------------------------
-# Helper function for robust parsing
-# --------------------------------------------------
-def extract_sections(content):
-    def block(name):
-        match = re.search(
-            rf"---{name}---(.*?)---{name}---",
-            content,
-            re.DOTALL | re.IGNORECASE
-        )
-        return match.group(1).strip() if match else None
-
-    html = block("html")
-    css  = block("css")
-    js   = block("js")
-
-    if html and css and js:
-        return html, css, js
-
-    raise ValueError("Invalid format")
-
-# --------------------------------------------------
-# Generate button
-# --------------------------------------------------
 if st.button("generate"):
-
-    if not prompt.strip():
-        st.warning("Please describe your website.")
-        st.stop()
-
-    # ✅ Correct message format for Gemini
-    messages = [
-        SystemMessage(content="""You are a senior frontend engineer.
+    message=[("system",""" You are a senior frontend engineer.
 
 Generate a modern, premium, responsive frontend website.
 
@@ -73,67 +35,25 @@ Output MUST be EXACTLY in this format and nothing else:
 
 ---js---
 [js code]
----js---
-"""),
-        HumanMessage(content=prompt)
-    ]
+---js---  
+     
+""")]
+    
+    message.append(("user", prompt))
 
-    # ✅ Stable, widely available model
-    model = ChatGoogleGenerativeAI(
-        model="gemini-pro",
-        temperature=0.6,
-        max_output_tokens=4096
-    )
-
-    with st.spinner("Generating website..."):
-        response = model.invoke(messages)
+    model=ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
+    response = model.invoke(message)
 
     content = response.content
 
-    # --------------------------------------------------
-    # Robust parsing with auto-fix
-    # --------------------------------------------------
     try:
-        html, css, js = extract_sections(content)
+        html = content.split("---html---")[1].split("---html---")[0].strip()
+        css  = content.split("---css---")[1].split("---css---")[0].strip()
+        js   = content.split("---js---")[1].split("---js---")[0].strip()
+    except IndexError:
+        st.error("Model output format is invalid. Please try again.")
+        st.stop()
 
-    except ValueError:
-        st.warning("Fixing model output format automatically...")
-
-        repair_prompt = f"""
-Rewrite the following output EXACTLY in this format and NOTHING else:
-
----html---
-(valid HTML only)
----html---
-
----css---
-(valid CSS only)
----css---
-
----js---
-(valid JavaScript only)
----js---
-
-Original output:
-{content}
-"""
-
-        repair_messages = [
-            SystemMessage(content="Fix formatting only. Do not change content."),
-            HumanMessage(content=repair_prompt)
-        ]
-
-        repaired = model.invoke(repair_messages).content
-
-        try:
-            html, css, js = extract_sections(repaired)
-        except ValueError:
-            st.error("Model failed to produce valid output. Please try again.")
-            st.stop()
-
-    # --------------------------------------------------
-    # Write files
-    # --------------------------------------------------
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -143,25 +63,16 @@ Original output:
     with open("script.js", "w", encoding="utf-8") as f:
         f.write(js)
 
-    # --------------------------------------------------
-    # Zip files
-    # --------------------------------------------------
-    with zipfile.ZipFile("website.zip", "w", zipfile.ZIP_DEFLATED) as zipf:
+    with zipfile.ZipFile("website.zip", "w") as zipf:
         zipf.write("index.html")
         zipf.write("style.css")
         zipf.write("script.js")
 
-    # --------------------------------------------------
-    # Download
-    # --------------------------------------------------
-    with open("website.zip", "rb") as f:
-        st.download_button(
-            "Click to download",
-            data=f,
-            file_name="website.zip",
-            mime="application/zip"
-        )
-
-    st.success("Website generated successfully")
+    
 
 
+    st.download_button("click to download",
+                       data=open("website.zip","rb"),
+                       file_name="website.zip")
+
+    st.write("success")
