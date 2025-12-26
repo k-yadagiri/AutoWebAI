@@ -17,7 +17,13 @@ if st.button("generate"):
 
 Generate a modern, premium, responsive frontend website.
 
-Rules (MUST FOLLOW):
+STRICT RULES:
+- HTML block → ONLY HTML
+- CSS block → ONLY CSS
+- JS block → ONLY JavaScript
+- NEVER repeat block markers
+- NEVER nest code between blocks
+- Each block must contain only its own language.
 - Use semantic HTML5, external CSS, and vanilla JavaScript.
 - Design must be modern and visually rich (gradients, cards, depth).
 - Do not use frameworks or libraries.
@@ -74,5 +80,6 @@ Output MUST be EXACTLY in this format and nothing else:
     st.download_button("click to download",
                        data=open("website.zip","rb"),
                        file_name="website.zip")
+
 
     st.write("success")
